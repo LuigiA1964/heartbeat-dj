@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="description" content="HeartBeat DJ — Muziek die je hartslag volgt">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HeartBeat DJ">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <title>HeartBeat DJ</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    /* Workout achtergrond — sportieve beelden */
+    .workout-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 1.5s ease;
+    }
+
+    .workout-bg--active {
+      opacity: 1;
+    }
+
+    .workout-bg__layer {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 1.5s ease;
+    }
+
+    .workout-bg__layer--visible {
+      opacity: 1;
+    }
+
+    /* Glasmorfisme overlay voor leesbaarheid */
+    .workout-bg__overlay {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: rgba(13, 17, 23, 0.75);
+      backdrop-filter: blur(2px);
+    }
+
+    /* Glasmorfisme cards tijdens workout */
+    .screen--workout .hr-display,
+    .screen--workout .hr-graph,
+    .screen--workout .now-playing,
+    .screen--workout .workout-timeline,
+    .screen--workout .simulator {
+      background: rgba(28, 33, 40, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Pulserende hartslag animatie */
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      15% { transform: scale(1.15); }
+      30% { transform: scale(1); }
+      45% { transform: scale(1.1); }
+    }
+
+    .hr-display__icon {
+      display: inline-block;
+      font-size: 2rem;
+      animation: heartbeat 1s ease-in-out infinite;
+    }
+
+    .hr-display__icon--slow { animation-duration: 1.2s; }
+    .hr-display__icon--normal { animation-duration: 0.8s; }
+    .hr-display__icon--fast { animation-duration: 0.5s; }
+    .hr-display__icon--extreme { animation-duration: 0.35s; }
+
+    @media (max-width: 600px) {
+      .hr-display__icon {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Workout achtergrond -->
+    <div class="workout-bg" id="workout-bg"></div>
+    <div class="workout-bg__layer" id="workout-bg-next"></div>
+    <div class="workout-bg__overlay"></div>
+
+    <!-- Header -->
+    <header class="app__header">
+      <div class="app__logo">
+        <span class="app__logo-icon">💓</span>
+        <span>HeartBeat DJ</span>
+      </div>
+      <div class="user-info" id="user-info" style="display: none;">
+        <img class="user-info__avatar" id="user-avatar" alt="avatar">
+        <span id="user-name"></span>
+        <button class="btn btn--sm btn--secondary" id="logout-btn">Uitloggen</button>
+      </div>
+    </header>
+
+    <main class="app__main">
+      <!-- ═══════════ LOGIN SCREEN ═══════════ -->
+      <section class="screen screen--active" id="screen-login">
+        <div class="login">
+          <h1 class="login__title">💓 HeartBeat DJ</h1>
+          <p class="login__subtitle">
+            Muziek die meegaat met je hartslag.
+            Koppel je Spotify playlists aan hartslag-zones en train met de perfecte soundtrack.
+          </p>
+
+          <div class="login__client-id-group">
+            <label class="label" for="client-id-input">Spotify Client ID</label>
+            <input
+              class="input"
+              type="text"
+              id="client-id-input"
+              placeholder="Plak hier je Client ID"
+              autocomplete="off"
+              spellcheck="false"
+            >
+            <p style="font-size: var(--text-xs); color: var(--text-muted);">
+              Maak een app op
+              <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener" style="color: var(--accent);">
+                developer.spotify.com
+              </a>
+              en kopieer de Client ID.
+            </p>
+          </div>
+
+          <button class="btn btn--primary btn--lg" id="login-btn">
+            Verbind met Spotify
+          </button>
+        </div>
+      </section>
+
+      <!-- ═══════════ SETUP SCREEN ═══════════ -->
+      <section class="screen" id="screen-setup">
+        <div class="setup">
+          <!-- Persoonlijke instelling -->
+          <div class="setup__section">
+            <h2 class="setup__section-title">Jouw profiel</h2>
+            <div style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 140px;">
+                <label class="label" for="age-input">Leeftijd</label>
+                <input class="input" type="number" id="age-input" min="10" max="100" placeholder="30" value="30"
+                       inputmode="numeric" pattern="[0-9]*">
+              </div>
+              <div style="flex: 1; min-width: 140px;">
+                <label class="label" for="max-hr-input">Max hartslag (220 - leeftijd)</label>
+                <input class="input" type="number" id="max-hr-input" min="100" max="250" value="190"
+                       inputmode="numeric" pattern="[0-9]*">
+              </div>
+            </div>
+          </div>
+
+          <!-- Workout modus -->
+          <div class="setup__section">
+            <h2 class="setup__section-title">Workout modus</h2>
+            <div class="mode-toggle">
+              <button class="mode-toggle__option mode-toggle__option--active" data-mode="reactive">
+                Reactief
+              </button>
+              <button class="mode-toggle__option" data-mode="planned">
+                Gepland
+              </button>
+            </div>
+            <p style="color: var(--text-muted); font-size: var(--text-xs); margin-top: var(--space-sm);" id="mode-description">
+              Muziek volgt je hartslag in realtime.
+            </p>
+          </div>
+
+          <!-- Zone ↔ Playlist mapping -->
+          <div class="setup__section">
+            <h2 class="setup__section-title">Zone → Playlist</h2>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-md); font-size: var(--text-sm);">
+              Koppel een Spotify playlist aan elke hartslag-zone.
+            </p>
+            <div class="setup__zone-list" id="zone-setup-list">
+              <!-- Wordt dynamisch gevuld -->
+            </div>
+          </div>
+
+          <!-- Workout Planner (alleen zichtbaar in planned mode) -->
+          <div class="setup__section" id="planner-section" style="display: none;">
+            <h2 class="setup__section-title">Interval-schema</h2>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-md); font-size: var(--text-sm);">
+              Kies een template of maak je eigen interval-training.
+            </p>
+            <div class="planner__templates" id="workout-templates">
+              <!-- Wordt dynamisch gevuld -->
+            </div>
+          </div>
+
+          <!-- Start knop -->
+          <div style="text-align: center; padding: var(--space-lg) 0;">
+            <button class="btn btn--primary btn--lg" id="start-workout-btn" disabled>
+              Start Workout
+            </button>
+            <div id="player-mode-info" style="margin-top: var(--space-sm);"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════ WORKOUT SCREEN ═══════════ -->
+      <section class="screen screen--workout" id="screen-workout">
+        <div class="dashboard">
+          <!-- Hartslag Display -->
+          <div class="hr-display" id="hr-display">
+            <div class="hr-display__icon" id="hr-icon">❤️</div>
+            <div class="hr-display__bpm" id="hr-bpm">--</div>
+            <div class="hr-display__label">BPM</div>
+            <div class="hr-display__zone-name" id="hr-zone-name">—</div>
+          </div>
+
+          <!-- Hartslag Grafiek -->
+          <div class="hr-graph">
+            <canvas class="hr-graph__canvas" id="hr-graph-canvas"></canvas>
+          </div>
+
+          <!-- Now Playing -->
+          <div class="now-playing">
+            <img class="now-playing__art" id="now-playing-art" alt="Album art"
+                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect fill='%2321262d' width='80' height='80'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23484f58' font-size='24'%3E♪%3C/text%3E%3C/svg%3E">
+            <div class="now-playing__info">
+              <div class="now-playing__title" id="now-playing-title">Wachten op muziek...</div>
+              <div class="now-playing__artist" id="now-playing-artist">—</div>
+            </div>
+            <div class="now-playing__controls">
+              <button class="btn btn--icon btn--secondary" id="player-pause" title="Pauze/Play">▶</button>
+              <button class="btn btn--icon btn--secondary" id="player-next" title="Volgend nummer">⏭</button>
+              <input type="range" id="volume-slider" min="0" max="100" value="70"
+                     style="width: 80px;" title="Volume">
+            </div>
+          </div>
+
+          <!-- Workout Timeline (planned mode) -->
+          <div class="workout-timeline" id="workout-timeline-container" style="display: none;">
+            <div class="workout-timeline__title">Workout voortgang</div>
+            <div class="workout-timeline__bar" id="workout-timeline-bar"></div>
+            <div class="workout-timeline__timer" id="workout-timer">00:00</div>
+          </div>
+
+          <!-- Simulator Controls -->
+          <div class="simulator">
+            <div class="simulator__title">Hartslag Simulator</div>
+            <div class="simulator__slider-group">
+              <span style="font-size: var(--text-xs); color: var(--text-secondary);">40</span>
+              <input type="range" class="simulator__slider" id="hr-slider"
+                     min="40" max="220" value="72">
+              <span style="font-size: var(--text-xs); color: var(--text-secondary);">220</span>
+              <span class="simulator__slider-value" id="hr-slider-value">72</span>
+              <span style="font-size: var(--text-xs); color: var(--text-secondary);">BPM</span>
+            </div>
+            <div class="simulator__scenarios">
+              <button class="btn btn--sm btn--secondary" data-scenario="full_workout">Full Workout</button>
+              <button class="btn btn--sm btn--secondary" data-scenario="intervals">Intervals</button>
+              <button class="btn btn--sm btn--secondary" data-scenario="steady_state">Steady</button>
+            </div>
+          </div>
+
+          <!-- Workout Controls -->
+          <div class="workout-controls">
+            <button class="btn btn--secondary" id="pause-workout-btn">Pauze</button>
+            <button class="btn btn--danger" id="stop-workout-btn">Stop Workout</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container"></div>
+
+  </div>
+
+  <script>
+    window.__debugLog = console.log;
+  </script>
+  <script type="module" src="js/app.js"></script>
+  <script>
+    // Service Worker registratie
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {
+        // SW registratie mislukt — app werkt nog steeds
+      });
+    }
+  </script>
+</body>
+</html>

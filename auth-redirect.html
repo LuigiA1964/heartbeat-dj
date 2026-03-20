@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HeartBeat DJ — Verbinden met Spotify...</title>
+  <style>
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    .loader {
+      font-size: 1.25rem;
+    }
+    .loader span {
+      color: #1db954;
+    }
+    a {
+      color: #1db954;
+      margin-top: 1rem;
+      display: inline-block;
+    }
+  </style>
+  <script>
+    // Lees de auth URL uit de hash (niet de query string, om leaks te voorkomen)
+    const authUrl = decodeURIComponent(window.location.hash.slice(1));
+    if (authUrl && authUrl.startsWith('https://accounts.spotify.com/')) {
+      // Meta refresh injecteren — dit breekt iOS Universal Links
+      const meta = document.createElement('meta');
+      meta.httpEquiv = 'refresh';
+      meta.content = '0;url=' + authUrl;
+      document.head.appendChild(meta);
+
+      // Fallback: als meta refresh niet werkt na 2 sec, toon handmatige link
+      setTimeout(() => {
+        const el = document.getElementById('fallback');
+        if (el) {
+          el.style.display = 'block';
+          el.querySelector('a').href = authUrl;
+        }
+      }, 2000);
+    } else {
+      // Geen geldige URL — terug naar home
+      window.location.href = './index.html';
+    }
+  </script>
+</head>
+<body>
+  <div>
+    <div class="loader">
+      <span>💓</span> Verbinden met Spotify...
+    </div>
+    <div id="fallback" style="display: none; margin-top: 2rem;">
+      <p style="font-size: 0.875rem; color: #8b949e;">
+        Redirect werkt niet automatisch?
+      </p>
+      <a href="#">Tik hier om naar Spotify te gaan</a>
+    </div>
+  </div>
+</body>
+</html>
