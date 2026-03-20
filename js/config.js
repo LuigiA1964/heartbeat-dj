@@ -17,9 +17,7 @@ export const APP_VERSION = '1.0.0';
  */
 export const SPOTIFY = Object.freeze({
   /** Runtime overschrijfbaar via window.__SPOTIFY_CLIENT_ID (sessionStorage) */
-  get CLIENT_ID() {
-    return window.__SPOTIFY_CLIENT_ID || '627bb9cfc6904125adfacad49fae653b';
-  },
+  CLIENT_ID: '627bb9cfc6904125adfacad49fae653b',
   REDIRECT_URI: window.location.origin,
   SCOPES: [
     'streaming',

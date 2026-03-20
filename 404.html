@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // GitHub Pages SPA redirect — stuurt alle 404's naar index.html
+    // De OAuth callback URL met ?code= parameter wordt zo correct afgehandeld
+    const path = window.location.pathname;
+    const search = window.location.search;
+    const hash = window.location.hash;
+    window.location.replace(
+      window.location.origin + '/heartbeat-dj/index.html' + search + hash
+    );
+  </script>
+</head>
+<body></body>
+</html>

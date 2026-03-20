@@ -97,12 +97,6 @@ class App {
     this.#bindGlobalEvents();
     this.#initBackgroundImages();
 
-    // Vul opgeslagen Client ID in
-    const savedId = sessionStorage.getItem('hbdj_client_id');
-    const clientInput = this.#el('client-id-input');
-    if (savedId && clientInput) {
-      clientInput.value = savedId;
-    }
   }
 
   /**
@@ -302,20 +296,6 @@ class App {
   // ── Login ───────────────────────────────────────────────
 
   async #handleLogin() {
-    const clientIdInput = this.#el('client-id-input');
-    const clientId = clientIdInput?.value?.trim();
-
-    if (!clientId) {
-      this.#showToast('Voer je Spotify Client ID in.', 'error');
-      return;
-    }
-
-    // Sla Client ID op in sessionStorage voor hergebruik
-    sessionStorage.setItem('hbdj_client_id', clientId);
-
-    // Update de config runtime (SPOTIFY is frozen, dus we gebruiken een override)
-    window.__SPOTIFY_CLIENT_ID = clientId;
-
     try {
       await this.#auth.login();
     } catch (err) {
@@ -916,13 +896,6 @@ class App {
   }
 }
 
-// ── Config Override ─────────────────────────────────────
-// Spotify CLIENT_ID kan runtime worden ingesteld via sessionStorage
-// Dit wordt geladen voordat de auth module het nodig heeft
-const savedClientId = sessionStorage.getItem('hbdj_client_id');
-if (savedClientId) {
-  window.__SPOTIFY_CLIENT_ID = savedClientId;
-}
 
 // ── Bootstrap ───────────────────────────────────────────
 const app = new App();
