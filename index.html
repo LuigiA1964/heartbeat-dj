@@ -276,11 +276,28 @@
   </script>
   <script type="module" src="js/app.js"></script>
   <script>
-    // Service Worker registratie
+    // Service Worker: eerst oude caches opruimen, dan verse SW registreren
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {
-        // SW registratie mislukt — app werkt nog steeds
-      });
+      // Stap 1: Verwijder ALLE oude caches om gecachte 404's en verouderde HTML kwijt te raken
+      if ('caches' in window) {
+        caches.keys().then(function(keys) {
+          keys.forEach(function(key) {
+            if (key !== 'heartbeat-dj-v5') {
+              caches.delete(key);
+            }
+          });
+        });
+      }
+
+      // Stap 2: Registreer SW met updateViaCache: 'none' zodat browser altijd checkt op nieuwe versie
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+        .then(function(reg) {
+          // Forceer update check
+          reg.update();
+        })
+        .catch(function() {
+          // SW registratie mislukt — app werkt nog steeds
+        });
     }
   </script>
 </body>

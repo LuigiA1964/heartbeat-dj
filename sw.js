@@ -12,7 +12,7 @@
  * en zorgt voor offline basisfunctionaliteit (UI laadt).
  */
 
-const CACHE_NAME = 'heartbeat-dj-v4';
+const CACHE_NAME = 'heartbeat-dj-v5';
 
 // Relatieve paden — werkt op elk domein en subpad
 const APP_SHELL_RELATIVE = [
@@ -87,8 +87,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // App shell: cache-first
+  // Navigatie (HTML): network-first — zodat updates direct zichtbaar zijn
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Sla verse versie op in cache voor offline gebruik
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('index.html')))
+    );
+    return;
+  }
+
+  // Overige app shell (CSS, JS, afbeeldingen): stale-while-revalidate
   event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request))
+    caches.match(request).then((cached) => {
+      const fetchPromise = fetch(request).then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
+        return response;
+      }).catch(() => cached);
+
+      return cached || fetchPromise;
+    })
   );
 });
